@@ -135,10 +135,10 @@ public class SenseiServer {
       try
       {        
         _core.shutdown();
-        pluginRegistry.stop();
         _clusterClient.removeNode(_id);
         _clusterClient.shutdown();
         _serverNode = null;
+        pluginRegistry.stop();
         _core.getPluggableSearchEngineManager().close();
       } catch (Exception e)
       {
@@ -452,6 +452,7 @@ public class SenseiServer {
       public void run(){
 
         try{
+          server.setAvailable(false);
           jettyServer.stop();
         } catch (Exception e) {
           logger.error(e.getMessage(),e);

@@ -44,7 +44,9 @@ public class SingleNodeStarter {
         Runtime.getRuntime().addShutdownHook(new Thread() {
           @Override
           public void run() {
-            shutdown();
+            if (serverStarted) {
+              shutdown();
+            }
           }
         });
         PartitionedLoadBalancerFactory balancerFactory = new SenseiPartitionedLoadBalancerFactory(50);
@@ -106,16 +108,23 @@ public class SingleNodeStarter {
       throw new RuntimeException(ex);
     }
   }
-  
+  private static final boolean setUnavailable = false;
   public static void shutdown() {
     senseiBroker = null;
     try {
-      jettyServer.stop();
+      server.setAvailable(false);
+      server.shutdown();
+     
+     
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-      server.shutdown();
-      serverStarted = false;
+      try {
+        serverStarted = false;
+        jettyServer.stop();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
   }
 }

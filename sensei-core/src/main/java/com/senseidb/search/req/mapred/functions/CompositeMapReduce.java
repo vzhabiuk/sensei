@@ -2,6 +2,7 @@ package com.senseidb.search.req.mapred.functions;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -133,7 +134,12 @@ public class CompositeMapReduce implements SenseiMapReduce<Serializable, Seriali
   @Override
   public Serializable reduce(List<Serializable> combineResults) {
     if (combineResults.size() == 0) {
-      return null;
+      HashMap<Key, Serializable> ret = new HashMap<CompositeMapReduce.Key, Serializable>();
+      for (Key key : innerFunctionsRefs.keySet()) {
+        SenseiMapReduce function = MapReduceRegistry.get(innerFunctionsRefs.get(key).getFirst());
+        ret.put(key, (Serializable) function.reduce(Collections.EMPTY_LIST));
+      }
+      return ret;
     }
    
     HashMap<Key, Serializable> firstResult = (HashMap<Key, Serializable>) combineResults.get(0);
