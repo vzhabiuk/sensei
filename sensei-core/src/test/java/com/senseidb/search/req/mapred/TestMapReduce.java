@@ -129,7 +129,7 @@ public class TestMapReduce extends TestCase {
 
     }
     public void test13CountMapReduceBQLWithGroupBy() throws Exception {      
-      String req = "{\"bql\":\"SELECT  sum(year), sum(price) FROM cars WHERE color = 'red' GROUP BY category top 5 LIMIT 0\"}";
+      String req = "{\"bql\":\"SELECT  sum(price) FROM cars WHERE color = 'red' GROUP BY category top 5 LIMIT 0\"}";
       JSONObject res = TestSensei.search(new JSONObject(req));
       System.out.println("!!top5=" + res.toString(1));
       JSONObject mapReduceResult = res.getJSONObject("mapReduceResult");
@@ -162,7 +162,7 @@ public class TestMapReduce extends TestCase {
       assertEquals(-15000, firstObject.getLong("min"));
     }
     public void test16SumGroupByReduce() throws Exception {      
-      String req = "{\"bql\":\"SELECT sum(groupid), sum(groupid) group by groupid \"}";
+      String req = "{\"bql\":\"SELECT sum(groupid) group by groupid \"}";
       JSONObject res = TestSensei.search(new JSONObject(req));
       System.out.println(res.toString(1));
       JSONObject mapReduceResult = res.getJSONObject("mapReduceResult");
