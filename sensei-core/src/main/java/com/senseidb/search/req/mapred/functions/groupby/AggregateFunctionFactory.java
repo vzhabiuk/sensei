@@ -1,6 +1,8 @@
 package com.senseidb.search.req.mapred.functions.groupby;
 
 
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,6 +20,11 @@ import com.senseidb.util.JSONUtil;
 public class AggregateFunctionFactory {
     public static AggregateFunction valueOf(String name, String column) {
         name = name.toLowerCase();
+                
+        if (name.equals("distinctcount")) {
+          return new DistictCountAggregateFunction(column);
+        }
+
         if (name.endsWith("avg")) {
             return new AvgAggregationFunction(column);
         }
@@ -97,6 +104,68 @@ public class AggregateFunctionFactory {
       }
 
     }
+    
+    /* Distinct Group By Count impl start */
+
+    public static class DistictCountAggregateFunction implements AggregateFunction<GroupedValue> {
+      private final String column;
+
+      public DistictCountAggregateFunction(String column) {
+        this.column = column;
+      }
+
+
+      @Override
+      public GroupedValue produceSingleValue(SingleFieldAccessor accessor, int docId) {
+        DistinctCountGroupValue val = new DistinctCountGroupValue();
+        val.addToSet(accessor.getLong(docId));
+        return val;
+      }
+
+      @Override
+      public Object toJson(HashMap<String, GroupedValue> reduceResult) {
+        try {
+          JSONArray ret = new JSONUtil.FastJSONArray();
+          for (String key : AggregateFunctionFactory.sort(reduceResult)) {
+            DistinctCountGroupValue value = (DistinctCountGroupValue) reduceResult.get(key);
+              ret.put(new JSONUtil.FastJSONObject().put("count", value.longSet.size()).put("group", key));
+          }
+          return ret;
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+    }
+
+    public static class DistinctCountGroupValue implements GroupedValue {
+      LongOpenHashSet longSet = new LongOpenHashSet();
+
+      long count = 0;
+      int group = 0;
+
+      @Override
+      public int compareTo(GroupedValue o) {
+        long val = longSet.size() - ((DistinctCountGroupValue) o).longSet.size();
+        if (val < 0)
+          return -1;
+        if (val == 0)
+          return 0;
+        return 1;
+      }
+
+      @Override
+      public void merge(GroupedValue anotherValue) {
+          longSet.addAll(((DistinctCountGroupValue) anotherValue).longSet);
+      }
+
+      public void addToSet(long val) {
+        longSet.add(val);
+      }
+    }
+
+    /* Distinct Group By Count impl end */
+
     public static class CountGroupedValue implements GroupedValue {
       long count = 0;
 

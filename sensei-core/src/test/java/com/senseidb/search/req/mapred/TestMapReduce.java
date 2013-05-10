@@ -3,6 +3,8 @@ package com.senseidb.search.req.mapred;
 import junit.framework.TestCase;
 
 import org.apache.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.senseidb.svc.api.SenseiService;
@@ -188,4 +190,34 @@ public class TestMapReduce extends TestCase {
        assertEquals(0, res.getJSONArray("errors").length());
     }
    
+    private int getFilterGroupByCount() throws JSONException, Exception {
+      String req = "{\"bql\":\"SELECT distinctCount(groupid) where color='black' limit 1\"}";
+      JSONObject res = TestSensei.search(new JSONObject(req));
+
+      System.out.println(res.toString(1));
+      return res.getJSONObject("mapReduceResult").getInt("distinctCount");
+    }
+
+    public void test18DistinctGroupByColumn() throws Exception {
+      int filterDistinctCount = getFilterGroupByCount();
+      // number of distinct groupId in the entire set is 1509
+      // so if I ask for a disinctCount on the entire set grouping by color, the sum total of all groups should be 1509
+      String req = "{\"bql\":\"SELECT distinctCount(groupid) group by color top 10 limit 1\"}";
+      long start = System.currentTimeMillis();
+      JSONObject res = TestSensei.search(new JSONObject(req));
+      long stop = System.currentTimeMillis();
+      System.out.println("Time Taken with Json Parsing : " + (stop - start));
+      JSONArray arrOfGroups =  res.getJSONObject("mapReduceResult").getJSONArray("grouped");
+      int groupByDistictCount = 0;
+      for (int i = 0 ; i < arrOfGroups.length(); i++) {
+        if (arrOfGroups.getJSONObject(i).getString("group").equals("black")) {
+          groupByDistictCount += arrOfGroups.getJSONObject(i).getInt("count");
+        }
+      }
+      System.out.println(res.toString(1));
+      assertEquals(filterDistinctCount, groupByDistictCount);
+      assertEquals(1, res.getJSONArray("hits").length());
+      assertEquals(0, res.getJSONArray("errors").length());
+    }
+
 }
